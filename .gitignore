@@ -1,24 +1,18 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Entorno Virtual
+venv/
+.venv/
 
-node_modules
-dist
-dist-ssr
-*.local
+# Archivos de Python compilados
+__pycache__/
+*.pyc
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Variables de entorno
+.env
+
+# Base de datos y archivos de instancia
+instance/
+*.db
+*.sqlite3
+
+# Carpeta de subidas
+uploads/
