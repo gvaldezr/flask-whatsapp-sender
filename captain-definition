@@ -5,7 +5,7 @@
         "$$cap_appname": {
             "image": "./",
             "command": "gunicorn --bind 0.0.0.0:5001 wsgi:app",
-            "ports": ["80"],
+            "ports": ["5001"],
             "dependsOn": []
         },
         "$$cap_appname-worker": {
