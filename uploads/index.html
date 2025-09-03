@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Campaigns - Anáhuac Mayab</title>
+    <!-- Tailwind CSS desde CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons desde CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide-react@0.542.0/dist/cjs/lucide-react.min.js"></script>
+    <style>
+        [hidden] { display: none !important; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <div id="app-container">
+        <!-- El contenido se renderizará aquí -->
+    </div>
+
+    <!-- MODALES -->
+    <!-- Modal para crear plantilla -->
+    <div id="template-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" hidden>
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+            <div class="flex justify-between items-center p-5 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-800">Crear Nueva Plantilla</h3>
+                <button onclick="closeModal('template-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-6">
+                <form id="template-form" class="space-y-4">
+                    <div>
+                        <label for="template-name" class="block text-sm font-medium text-gray-700">Nombre de la Plantilla</label>
+                        <input id="template-name" type="text" placeholder="egresados_nombre_campana" class="mt-1 w-full p-3 border border-gray-300 rounded-lg" required>
+                        <p class="text-xs text-gray-500 mt-1">Debe ser único, en minúsculas y sin espacios (usar guion bajo).</p>
+                    </div>
+                    <div>
+                        <label for="template-type" class="block text-sm font-medium text-gray-700">Tipo de Plantilla</label>
+                        <select id="template-type" class="mt-1 w-full p-3 bg-gray-100 border border-gray-300 rounded-lg">
+                            <option value="twilio/text">Texto</option>
+                            <option value="twilio/media">Media (Texto + Imagen)</option>
+                        </select>
+                    </div>
+                    <div id="media-url-container" hidden>
+                        <label for="media-url" class="block text-sm font-medium text-gray-700">URL de la Imagen</label>
+                        <input id="media-url" type="url" placeholder="https://ejemplo.com/imagen.png" class="mt-1 w-full p-3 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label for="template-body" class="block text-sm font-medium text-gray-700">Cuerpo del Mensaje</label>
+                        <textarea id="template-body" placeholder="Hola {{1}}, te recordamos..." rows="5" class="mt-1 w-full p-3 border border-gray-300 rounded-lg" required></textarea>
+                        <p class="text-xs text-gray-500 mt-1">Usa `{{1}}` para la variable del nombre del cliente.</p>
+                    </div>
+                    <button type="submit" class="w-full bg-[#0033a0] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#00287a] flex items-center justify-center space-x-2">
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i><span>Crear y Enviar a Aprobación</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ver errores de campaña -->
+    <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" hidden>
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+            <div class="flex justify-between items-center p-5 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-800">Errores de la Campaña</h3>
+                <button onclick="closeModal('error-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-6 max-h-[60vh] overflow-y-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr><th class="px-4 py-2">Teléfono</th><th class="px-4 py-2">Motivo del Error</th></tr>
+                    </thead>
+                    <tbody id="error-list"></tbody>
+                </table>
+            </div>
+            <div class="flex justify-end p-4 bg-gray-50 border-t rounded-b-2xl">
+                <button onclick="closeModal('error-modal')" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cerrar</button>
+            </div>
+        </div>
+    </div>
+    <!-- Modal para crear/editar usuario -->
+    <div id="user-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" hidden>
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="flex justify-between items-center p-5 border-b"><h3 id="user-modal-title" class="text-xl font-bold">Crear Usuario</h3><button onclick="closeModal('user-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button></div>
+            <div class="p-6">
+                <form id="user-form" class="space-y-4">
+                    <input type="hidden" id="user-id" name="userId">
+                    <div><label for="user-email" class="block text-sm font-medium">Email</label><input id="user-email" type="email" class="mt-1 w-full p-3 border rounded-lg" required></div>
+                    <div><label for="user-password" class="block text-sm font-medium">Contraseña</label><input id="user-password" type="password" placeholder="Dejar en blanco para no cambiar" class="mt-1 w-full p-3 border rounded-lg"></div>
+                    <div><label for="user-role" class="block text-sm font-medium">Rol</label><select id="user-role" class="mt-1 w-full p-3 bg-gray-100 border rounded-lg"><option value="standard">Estándar</option><option value="admin">Administrador</option></select></div>
+                    <button type="submit" class="w-full bg-[#0033a0] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#00287a] flex items-center justify-center space-x-2"><i data-lucide="save" class="w-5 h-5"></i><span>Guardar Usuario</span>
+                    </button>
+                </form>
+            </div>
+            <div class="flex justify-end p-4 bg-gray-50 border-t rounded-b-2xl"><button type="button" onclick="closeModal('user-modal')" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Cerrar</button></div>
+        </div>
+    </div>
+    <!-- Modal para crear campaña -->
+    <div id="campaign-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" hidden>
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="flex justify-between items-center p-5 border-b"><h3 class="text-xl font-bold">Crear Nueva Campaña</h3><button onclick="closeModal('campaign-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button></div>
+            <div class="p-6">
+                <form id="campaign-form" class="space-y-6">
+                    <input type="hidden" name="templateName" id="campaign-template-name">
+                    <div><label class="block text-sm font-bold mb-2">1. Selecciona Plantilla</label><select id="campaign-template-select" name="templateId" class="w-full p-3 bg-gray-100 border rounded-lg"></select></div>
+                    <div><label class="block text-sm font-bold mb-2">2. Sube contactos (CSV)</label><input id="csv-file-input" type="file" name="csvFile" accept=".csv" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-orange-50 file:text-[#f58220] hover:file:bg-orange-100"></div>
+                    <div><label class="block text-sm font-bold mb-2">3. Elige cuándo enviar</label><div class="flex space-x-4"><label class="flex items-center"><input type="radio" name="scheduleType" value="now" checked onchange="toggleScheduleDate(false)" class="form-radio text-[#0033a0]"> <span class="ml-2">Enviar ahora</span></label><label class="flex items-center"><input type="radio" name="scheduleType" value="later" onchange="toggleScheduleDate(true)" class="form-radio text-[#0033a0]"> <span class="ml-2">Programar</span></label></div><div id="schedule-date-container" class="mt-3" hidden><input type="datetime-local" name="scheduledAt" class="w-full p-3 bg-gray-100 border rounded-lg"><p class="text-xs text-yellow-600 mt-1"><b>Atención:</b> La hora se programará en tu zona horaria local.</p></div></div>
+                    <button type="submit" class="w-full bg-[#0033a0] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#00287a] flex items-center justify-center space-x-2"><i data-lucide="send" class="w-5 h-5"></i><span>Lanzar Campaña</span></button>
+                </form>
+            </div>
+            <div class="flex justify-end p-4 bg-gray-50 border-t rounded-b-2xl"><button type="button" onclick="closeModal('campaign-modal')" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Cancelar</button></div>
+        </div>
+    </div>
+
+    <script>
+        const state = { user: null, currentPage: 'login', templates: [], campaigns: [], users: [] };
+        const appContainer = document.getElementById('app-container');
+
+        const render = async () => {
+            appContainer.innerHTML = '';
+            if (state.user) {
+                appContainer.innerHTML += `
+                    <header class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-sm shadow-md z-40">
+                        <div class="container mx-auto px-4 md:px-8 flex justify-between items-center h-16">
+                            <div class="flex items-center space-x-2"><i data-lucide="message-square" class="text-[#f58220]"></i><span class="text-xl font-bold">WhatsApp Campaigns</span></div>
+                            <nav class="flex items-center space-x-4">
+                                <button onclick="navigateTo('dashboard')" class="${state.currentPage === 'dashboard' ? 'text-[#f58220] bg-orange-50' : 'text-gray-600'} px-3 py-2 text-sm font-medium rounded-md">Campañas</button>
+                                <button onclick="navigateTo('templates')" class="${state.currentPage === 'templates' ? 'text-[#f58220] bg-orange-50' : 'text-gray-600'} px-3 py-2 text-sm font-medium rounded-md">Plantillas</button>
+                                ${state.user.role === 'admin' ? `<button onclick="navigateTo('users')" class="${state.currentPage === 'users' ? 'text-[#f58220] bg-orange-50' : 'text-gray-600'} px-3 py-2 text-sm font-medium rounded-md"><i data-lucide="users" class="inline w-4 h-4 mr-1"></i>Usuarios</button>` : ''}
+                                <button onclick="handleLogout()" class="text-gray-600 px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">Cerrar Sesión</button>
+                            </nav>
+                        </div>
+                    </header>
+                `;
+            }
+            const mainContent = document.createElement('main');
+            mainContent.className = state.user ? 'pt-20 px-4 md:px-8 pb-8' : '';
+            if (state.currentPage === 'login') mainContent.innerHTML = renderLoginPage();
+            if (state.currentPage === 'dashboard') mainContent.innerHTML = await renderDashboardPage();
+            if (state.currentPage === 'templates') mainContent.innerHTML = await renderTemplatesPage();
+            if (state.currentPage === 'users') mainContent.innerHTML = await renderUsersPage();
+            appContainer.appendChild(mainContent);
+            lucide.createIcons();
+        };
+
+        const renderLoginPage = () => `
+            <div class="flex items-center justify-center h-screen"><div class="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-xl"><div class="text-center"><h1 class="text-4xl font-bold text-[#0033a0]">Bienvenido</h1><p class="mt-2 text-gray-600">Inicia sesión para gestionar tus campañas.</p></div><form id="login-form" class="space-y-6"><div><label for="login-email" class="sr-only">Email</label><input id="login-email" type="email" placeholder="email@example.com" class="w-full px-4 py-3 border rounded-lg" required></div><div><label for="login-password" class="sr-only">Contraseña</label><input id="login-password" type="password" placeholder="Contraseña" class="w-full px-4 py-3 border rounded-lg" required></div><p class="text-xs text-gray-500">Usuarios de prueba: <b>admin@example.com</b> y <b>user@example.com</b>. Contraseña: <b>password</b></p><button type="submit" class="w-full flex justify-center items-center py-3 px-4 text-white bg-[#0033a0] rounded-lg hover:bg-[#00287a]"><i data-lucide="log-in" class="mr-2 w-5 h-5"></i>Iniciar Sesión</button></form></div></div>
+        `;
+
+        const renderDashboardPage = async () => {
+            const response = await fetch('/api/campaigns');
+            state.campaigns = await response.json();
+            const getStatusChip = (s) => ({ 'Enviada': 'bg-green-100 text-green-800', 'Programada': 'bg-yellow-100 text-yellow-800', 'Enviando': 'bg-blue-100 text-blue-800', 'Error': 'bg-red-100 text-red-800', 'Error en Programación': 'bg-red-100 text-red-800', 'En Cola': 'bg-gray-100 text-gray-800', 'Procesando': 'bg-purple-100 text-purple-800 animate-pulse', 'Programada con Errores': 'bg-yellow-100 text-yellow-800', 'Enviada con Errores': 'bg-red-100 text-red-800' }[s] || 'bg-gray-100');
+            return `
+                <div class="animate-fade-in">
+                    <div class="flex justify-between items-center mb-6"><div><h1 class="text-3xl font-bold">Mis Campañas</h1><p class="text-gray-500 mt-1">Gestiona todas tus campañas.</p></div><button onclick="openCampaignModal()" class="bg-[#f58220] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#d9701b] flex items-center space-x-2"><i data-lucide="plus-circle"></i><span>Nueva Campaña</span></button></div>
+                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Campaña</th><th class="px-6 py-3">Envíos</th><th class="px-6 py-3">Estado</th><th class="px-6 py-3">Fechas (Creada / Envío)</th><th class="px-6 py-3 text-center">Acciones</th></tr></thead>
+                            <tbody>
+                                ${state.campaigns.map(c => `
+                                    <tr class="bg-white border-b hover:bg-gray-50">
+                                        <td class="px-6 py-4 font-medium text-gray-900 align-top"><div class="font-bold">${c.templateName}</div><p class="text-xs text-gray-600 mt-1 whitespace-pre-wrap max-w-xs">${c.templateBody || 'N/A'}</p></td>
+                                        <td class="px-6 py-4 align-top"><div class="text-green-600">${c.success_count} Exitosos</div><div class="text-red-600">${c.error_count} con Error</div></td>
+                                        <td class="px-6 py-4 align-top"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusChip(c.status)}">${c.status}</span></td>
+                                        <td class="px-6 py-4 align-top text-xs"><div><strong>Creada:</strong> ${new Date(c.createdAt + 'Z').toLocaleString()}</div><div class="mt-1"><strong>Envío:</strong> ${new Date(c.scheduledAt + 'Z').toLocaleString()}</div></td>
+                                        <td class="px-6 py-4 text-center align-top space-x-1">
+                                            ${c.error_count > 0 ? `<button onclick="openErrorModal(${c.id})" class="text-yellow-600 bg-yellow-50 hover:bg-yellow-200 p-2 rounded-full inline-flex" title="Ver Errores"><i data-lucide="eye" class="w-4 h-4"></i></button>` : ''}
+                                            <button onclick="handleDeleteCampaign(${c.id})" class="text-red-600 bg-red-50 hover:bg-red-200 p-2 rounded-full inline-flex" title="Eliminar Campaña"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderTemplatesPage = async () => {
+            const response = await fetch('/api/templates');
+            if(response.ok) state.templates = await response.json();
+            return `
+                <div class="animate-fade-in">
+                    <div class="flex justify-between items-center mb-6"><div><h1 class="text-3xl font-bold">Plantillas de Twilio</h1><p class="text-gray-500 mt-1">Estas son tus plantillas disponibles en Twilio.</p></div>
+                    ${state.user.role === 'admin' ? `<button onclick="openModal('template-modal')" class="bg-[#f58220] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#d9701b] flex items-center space-x-2"><i data-lucide="plus-circle"></i><span>Nueva Plantilla</span></button>` : ''}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${state.templates.map(t => `<div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col justify-between"><div><h3 class="font-bold text-lg text-[#0033a0]">${t.friendly_name}</h3><p class="text-gray-700 mt-3 text-sm bg-gray-50 p-4 rounded-md border whitespace-pre-wrap">${t.body || '<i>(Sin cuerpo de texto visible)</i>'}</p></div><p class="text-gray-400 mt-4 text-xs pt-4 border-t">SID: ${t.sid}</p></div>`).join('')}
+                    </div>
+                </div>
+            `;
+        };
+        
+        const renderUsersPage = async () => {
+            const response = await fetch('/api/users');
+            if(response.ok) state.users = await response.json();
+            return `
+                <div class="animate-fade-in">
+                    <div class="flex justify-between items-center mb-6"><div><h1 class="text-3xl font-bold">Gestión de Usuarios</h1><p class="text-gray-500 mt-1">Crea, edita y elimina usuarios.</p></div><button onclick="openUserModal()" class="bg-[#f58220] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#d9701b] flex items-center space-x-2"><i data-lucide="user-plus"></i><span>Nuevo Usuario</span></button></div>
+                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Email</th><th class="px-6 py-3">Rol</th><th class="px-6 py-3 text-center">Acciones</th></tr></thead>
+                            <tbody>
+                                ${state.users.map(u => `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4 font-medium text-gray-900">${u.email}</td><td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${u.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">${u.role}</span></td><td class="px-6 py-4 text-center space-x-2"><button onclick="openUserModal(${u.uid})" class="text-blue-600 bg-blue-50 hover:bg-blue-200 p-2 rounded-full" title="Editar Usuario"><i data-lucide="edit" class="w-4 h-4"></i></button><button onclick="handleDeleteUser(${u.uid})" class="text-red-600 bg-red-50 hover:bg-red-200 p-2 rounded-full" title="Eliminar Usuario"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        };
+        
+        const navigateTo = (page) => { state.currentPage = page; render(); };
+
+        const handleLogin = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+            const data = await res.json();
+            if (data.success) { state.user = data.user; navigateTo('dashboard'); } 
+            else { alert(data.message); }
+        };
+
+        const handleLogout = async () => {
+            await fetch('/api/logout', { method: 'POST' });
+            state.user = null;
+            navigateTo('login');
+        };
+
+        const handleSaveUser = async (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('user-id').value;
+            const email = document.getElementById('user-email').value;
+            const password = document.getElementById('user-password').value;
+            const role = document.getElementById('user-role').value;
+            const url = userId ? `/api/users/${userId}` : '/api/users';
+            const method = userId ? 'PUT' : 'POST';
+            const body = { email, role };
+            if (password) body.password = password;
+            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if (res.ok) { closeModal('user-modal'); navigateTo('users'); } 
+            else { const err = await res.json(); alert(`Error: ${err.message}`); }
+        };
+
+        const handleDeleteUser = async (userId) => {
+            if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+                const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+                if (res.ok) { navigateTo('users'); } 
+                else { const err = await res.json(); alert(`Error: ${err.message}`); }
+            }
+        };
+
+        const openUserModal = (userId = null) => {
+            const form = document.getElementById('user-form');
+            form.reset();
+            const modalTitle = document.getElementById('user-modal-title');
+            const userIdField = document.getElementById('user-id');
+            const userEmailField = document.getElementById('user-email');
+            if (userId) {
+                const user = state.users.find(u => u.uid === userId);
+                modalTitle.textContent = 'Editar Usuario';
+                userIdField.value = user.uid;
+                userEmailField.value = user.email;
+                document.getElementById('user-role').value = user.role;
+            } else {
+                modalTitle.textContent = 'Crear Usuario';
+                userIdField.value = '';
+            }
+            openModal('user-modal');
+        };
+        
+        const handleCreateTemplate = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('template-name').value;
+            const type = document.getElementById('template-type').value;
+            const body = document.getElementById('template-body').value;
+            const mediaUrl = document.getElementById('media-url').value;
+            
+            const payload = { name, type, body };
+            if (type === 'twilio/media') {
+                payload.mediaUrl = mediaUrl;
+            }
+            
+            const res = await fetch('/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const data = await res.json();
+            if (res.ok) {
+                alert('Plantilla enviada a aprobación con SID: ' + data.sid);
+                closeModal('template-modal');
+                navigateTo('templates');
+            } else {
+                alert(`Error: ${data.message}`);
+            }
+        };
+
+        const handleCreateCampaign = async (e) => {
+            e.preventDefault();
+            const form = document.getElementById('campaign-form');
+            const formData = new FormData(form);
+            const select = document.getElementById('campaign-template-select');
+            const selectedOption = select.options[select.selectedIndex];
+            formData.set('templateName', selectedOption.text);
+            
+            const scheduleType = formData.get('scheduleType');
+            if (scheduleType === 'later') {
+                const localDateStr = formData.get('scheduledAt');
+                if (localDateStr) {
+                    formData.set('scheduledAt', new Date(localDateStr).toISOString());
+                }
+            }
+
+            const res = await fetch('/api/campaigns', { method: 'POST', body: formData });
+            if (res.ok) { closeModal('campaign-modal'); navigateTo('dashboard'); } 
+            else { const err = await res.json(); alert(`Error: ${err.message}`); }
+        };
+
+        const handleDeleteCampaign = async (campaignId) => {
+            if (confirm('¿Estás seguro de que quieres eliminar esta campaña?')) {
+                const res = await fetch(`/api/campaigns/${campaignId}`, { method: 'DELETE' });
+                if (res.ok) { navigateTo('dashboard'); } 
+                else { const err = await res.json(); alert(`Error: ${err.message}`); }
+            }
+        };
+
+        const openCampaignModal = async () => {
+            const res = await fetch('/api/templates');
+            const templates = await res.json();
+            const select = document.getElementById('campaign-template-select');
+            select.innerHTML = '<option value="" disabled selected>Elige una plantilla...</option>';
+            templates.forEach(t => { select.innerHTML += `<option value="${t.sid}">${t.friendly_name}</option>`; });
+            openModal('campaign-modal');
+        };
+
+        const openErrorModal = async (campaignId) => {
+            const res = await fetch(`/api/campaigns/${campaignId}/errors`);
+            const errors = await res.json();
+            const errorList = document.getElementById('error-list');
+            errorList.innerHTML = '';
+            if (errors.length > 0) {
+                errors.forEach(err => {
+                    errorList.innerHTML += `<tr class="border-b"><td class="px-4 py-2">${err.phone}</td><td class="px-4 py-2 text-xs">${err.error}</td></tr>`;
+                });
+            } else {
+                errorList.innerHTML = '<tr><td colspan="2" class="text-center p-4">No se encontraron errores para esta campaña.</td></tr>';
+            }
+            openModal('error-modal');
+        };
+
+        const openModal = (id) => document.getElementById(id).removeAttribute('hidden');
+        const closeModal = (id) => document.getElementById(id).setAttribute('hidden', true);
+        const toggleScheduleDate = (show) => document.getElementById('schedule-date-container').hidden = !show;
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const res = await fetch('/api/session');
+            const data = await res.json();
+            if (data.user) { state.user = data.user; navigateTo('dashboard'); } 
+            else { navigateTo('login'); }
+            document.body.addEventListener('submit', (e) => {
+                if (e.target.id === 'login-form') handleLogin(e);
+                if (e.target.id === 'campaign-form') handleCreateCampaign(e);
+                if (e.target.id === 'user-form') handleSaveUser(e);
+                if (e.target.id === 'template-form') handleCreateTemplate(e);
+            });
+            document.getElementById('template-type').addEventListener('change', (e) => {
+                document.getElementById('media-url-container').hidden = e.target.value !== 'twilio/media';
+            });
+        });
+    </script>
+</body>
+</html>

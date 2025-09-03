@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # Servicio de Redis para Celery
+  redis:
+    image: "redis:alpine"
+    restart: always
+
+  # Servicio Web (Aplicación Flask con Gunicorn)
+  web:
+    build: .
+    # Comando para iniciar el servidor de producción Gunicorn
+    command: gunicorn --bind 0.0.0.0:5001 wsgi:app
+    ports:
+      - "5001:5001"
+    volumes:
+      # Monta el código para desarrollo (refleja cambios sin reconstruir)
+      - .:/app
+      # Volumen persistente para la carpeta de subidas
+      - uploads_volume:/app/uploads
+      # Volumen persistente para la base de datos SQLite
+      - db_volume:/app/instance
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: always
+
+  # Servicio del Worker de Celery
+  worker:
+    build: .
+    # Comando para iniciar el trabajador de Celery
+    command: celery -A app.celery worker --loglevel=info
+    volumes:
+      # El worker necesita acceso al mismo código y archivos
+      - .:/app
+      - uploads_volume:/app/uploads
+      - db_volume:/app/instance
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - web # Depende de 'web' para asegurar que la red esté lista
+    restart: always
+
+volumes:
+  uploads_volume:
+  db_volume:

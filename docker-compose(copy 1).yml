@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # Servicio de la aplicación web (Flask + Gunicorn)
+  app:
+    build: .
+    container_name: anahuac_app
+    restart: always
+    command: gunicorn --bind 0.0.0.0:5001 wsgi:app
+    volumes:
+      - .:/app
+    ports:
+      - "5001:5001"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+
+  # Servicio del trabajador de Celery
+  worker:
+    build: .
+    container_name: anahuac_worker
+    restart: always
+    command: celery -A app.celery worker --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - app
+
+  # Servicio de Redis (intermediario de mensajes)
+  redis:
+    image: "redis:alpine"
+    container_name: anahuac_redis
+    restart: always

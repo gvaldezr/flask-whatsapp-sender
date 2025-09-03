@@ -1,0 +1,7 @@
+{
+    "livePreviewUseDevServer": false,
+    "livePreviewServerURL": "http://127.0.0.1:5001",
+    "livePreviewServerProjectPath": "/",
+    "livePreviewHotReloadSupported": true,
+    "livePreviewFramework": "Docusaurus"
+}
