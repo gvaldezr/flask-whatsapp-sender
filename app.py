@@ -11,12 +11,16 @@ import requests
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from celery import Celery, Task
-
+from werkzeug.middleware.proxy_fix import ProxyFix
 # --- Cargar variables de entorno desde el archivo .env ---
 load_dotenv()
 
 # --- Configuración de Flask ---
 app = Flask(__name__)
+# --- Cambio Requerido: Añadir el middleware ProxyFix ---
+# Esta línea le permite a Flask entender que está detrás de un proxy (Apache)
+# y manejar correctamente las URLs bajo el prefijo /wp
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 # Ubicación de la base de datos SQLite
 # NOTA: La ruta se mantiene simple, Docker se encargará de la persistencia con volúmenes.
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///whatsapp_campaigns.db')
