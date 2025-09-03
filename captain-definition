@@ -1,5 +1,6 @@
 {
     "schemaVersion": 2,
+    "dockerfilePath": "./Dockerfile",
     "services": {
         "$$cap_appname": {
             "image": "./",
