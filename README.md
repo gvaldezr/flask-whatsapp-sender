@@ -34,39 +34,42 @@ Credenciales de una cuenta de Twilio (Account SID, Auth Token, Messaging Service
 
 Clonar el repositorio:
 
-_git clone [https://github.com/gvaldezr/flask-whatsapp-sender.git](https://github.com/gvaldezr/flask-whatsapp-sender.git)
-cd flask-whatsapp-sender_
+git clone [https://github.com/gvaldezr/flask-whatsapp-sender.git](https://github.com/gvaldezr/flask-whatsapp-sender.git)
+
+cd flask-whatsapp-sender
 
 Configurar las variables de entorno:
 
-_Crea un archivo .env a partir del ejemplo y llénalo con tus credenciales.
-_
-_
+Crea un archivo .env a partir del ejemplo y llénalo con tus credenciales.
+
 cp .env.example .env
-nano .env_
+
+nano .env
 
 Crear directorios necesarios:
 
 Estos directorios son para la base de datos y los archivos CSV subidos.
 
-_
+
 mkdir instance
 
-mkdir uploads_
+mkdir uploads
 
 Construir y levantar los contenedores:
 
 Este comando construirá las imágenes de Docker y lanzará los servicios en segundo plano.
 
-_
-sudo docker-compose up --build -d_
+
+sudo docker-compose up --build -d
+
 
 Inicializar la base de datos:
 
 Ejecuta este comando una única vez para crear las tablas y los usuarios iniciales.
 
-_
-sudo docker-compose exec web flask init-db_
+
+sudo docker-compose exec web flask init-db
+
 
 Configurar el Proxy Inverso:
 
