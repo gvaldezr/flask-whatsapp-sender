@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Campaigns - Anáhuac Mayab</title>
+    <title>{{ app_title }} - Anáhuac Mayab</title>
     <!-- Tailwind CSS desde CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons desde CDN -->
@@ -61,7 +61,6 @@
             </div>
         </div>
     </div>
-
     <!-- Modal para ver errores de campaña -->
     <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" hidden>
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
@@ -116,8 +115,18 @@
         </div>
     </div>
 
+
     <script>
-        const state = { user: null, currentPage: 'login', templates: [], campaigns: [], users: [] };
+        const APP_TITLE = {{ app_title | tojson }};
+        const state = { 
+            user: null, 
+            currentPage: 'login', 
+            templates: [], 
+            campaigns: [], 
+            users: [],
+            reportsData: { stats: {}, messages: [] },
+            currentLimit: '1000' // Límite por defecto
+        };
         const appContainer = document.getElementById('app-container');
 
         const render = async () => {
@@ -126,10 +135,11 @@
                 appContainer.innerHTML += `
                     <header class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-sm shadow-md z-40">
                         <div class="container mx-auto px-4 md:px-8 flex justify-between items-center h-16">
-                            <div class="flex items-center space-x-2"><i data-lucide="message-square" class="text-[#f58220]"></i><span class="text-xl font-bold">WhatsApp Campaigns</span></div>
-                            <nav class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-2"><i data-lucide="message-square" class="text-[#f58220]"></i><span class="text-xl font-bold">${APP_TITLE}</span></div>
+                            <nav class="flex items-center space-x-1 md:space-x-2">
                                 <button onclick="navigateTo('dashboard')" class="${state.currentPage === 'dashboard' ? 'text-[#f58220] bg-orange-50' : 'text-gray-600'} px-3 py-2 text-sm font-medium rounded-md">Campañas</button>
                                 <button onclick="navigateTo('templates')" class="${state.currentPage === 'templates' ? 'text-[#f58220] bg-orange-50' : 'text-gray-600'} px-3 py-2 text-sm font-medium rounded-md">Plantillas</button>
+                                <button onclick="navigateTo('reports')" class="${state.currentPage === 'reports' ? 'text-[#f58220] bg-orange-50' : 'text-gray-600'} px-3 py-2 text-sm font-medium rounded-md">Reportes</button>
                                 ${state.user.role === 'admin' ? `<button onclick="navigateTo('users')" class="${state.currentPage === 'users' ? 'text-[#f58220] bg-orange-50' : 'text-gray-600'} px-3 py-2 text-sm font-medium rounded-md"><i data-lucide="users" class="inline w-4 h-4 mr-1"></i>Usuarios</button>` : ''}
                                 <button onclick="handleLogout()" class="text-gray-600 px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">Cerrar Sesión</button>
                             </nav>
@@ -138,21 +148,23 @@
                 `;
             }
             const mainContent = document.createElement('main');
-            mainContent.className = state.user ? 'pt-20 px-4 md:px-8 pb-8' : '';
+            mainContent.className = state.user ? 'pt-24 px-4 md:px-8 pb-8' : '';
             if (state.currentPage === 'login') mainContent.innerHTML = renderLoginPage();
             if (state.currentPage === 'dashboard') mainContent.innerHTML = await renderDashboardPage();
             if (state.currentPage === 'templates') mainContent.innerHTML = await renderTemplatesPage();
             if (state.currentPage === 'users') mainContent.innerHTML = await renderUsersPage();
+            if (state.currentPage === 'reports') mainContent.innerHTML = await renderReportsPage();
+            
             appContainer.appendChild(mainContent);
             lucide.createIcons();
         };
 
         const renderLoginPage = () => `
-            <div class="flex items-center justify-center h-screen"><div class="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-xl"><div class="text-center"><h1 class="text-4xl font-bold text-[#0033a0]">Bienvenido</h1><p class="mt-2 text-gray-600">Inicia sesión para gestionar tus campañas.</p></div><form id="login-form" class="space-y-6"><div><label for="login-email" class="sr-only">Email</label><input id="login-email" type="email" placeholder="email@example.com" class="w-full px-4 py-3 border rounded-lg" required></div><div><label for="login-password" class="sr-only">Contraseña</label><input id="login-password" type="password" placeholder="Contraseña" class="w-full px-4 py-3 border rounded-lg" required></div><p class="text-xs text-gray-500">Usuarios de prueba: <b>admin@example.com</b> y <b>user@example.com</b>. Contraseña: <b>password</b></p><button type="submit" class="w-full flex justify-center items-center py-3 px-4 text-white bg-[#0033a0] rounded-lg hover:bg-[#00287a]"><i data-lucide="log-in" class="mr-2 w-5 h-5"></i>Iniciar Sesión</button></form></div></div>
+            <div class="flex items-center justify-center h-screen"><div class="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-xl"><div class="text-center"><h1 class="text-4xl font-bold text-[#f58220]">Bienvenido</h1><p class="mt-2 text-gray-600">Inicia sesión para gestionar tus campañas.</p></div><form id="login-form" class="space-y-6"><div><label for="login-email" class="sr-only">Email</label><input id="login-email" type="email" placeholder="email@example.com" class="w-full px-4 py-3 border rounded-lg" required></div><div><label for="login-password" class="sr-only">Contraseña</label><input id="login-password" type="password" placeholder="Contraseña" class="w-full px-4 py-3 border rounded-lg" required></div><button type="submit" class="w-full flex justify-center items-center py-3 px-4 text-white bg-[#f58220] rounded-lg hover:bg-[#d9701b]"><i data-lucide="log-in" class="mr-2 w-5 h-5"></i>Iniciar Sesión</button></form></div></div>
         `;
 
         const renderDashboardPage = async () => {
-            const response = await fetch('api/campaigns');
+            const response = await fetch('/api/campaigns');
             state.campaigns = await response.json();
             const getStatusChip = (s) => ({ 'Enviada': 'bg-green-100 text-green-800', 'Programada': 'bg-yellow-100 text-yellow-800', 'Enviando': 'bg-blue-100 text-blue-800', 'Error': 'bg-red-100 text-red-800', 'Error en Programación': 'bg-red-100 text-red-800', 'En Cola': 'bg-gray-100 text-gray-800', 'Procesando': 'bg-purple-100 text-purple-800 animate-pulse', 'Programada con Errores': 'bg-yellow-100 text-yellow-800', 'Enviada con Errores': 'bg-red-100 text-red-800' }[s] || 'bg-gray-100');
             return `
@@ -162,7 +174,7 @@
                         <table class="w-full text-sm text-left">
                             <thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Campaña</th><th class="px-6 py-3">Envíos</th><th class="px-6 py-3">Estado</th><th class="px-6 py-3">Fechas (Creada / Envío)</th><th class="px-6 py-3 text-center">Acciones</th></tr></thead>
                             <tbody>
-                                ${state.campaigns.map(c => `
+                                ${state.campaigns.length > 0 ? state.campaigns.map(c => `
                                     <tr class="bg-white border-b hover:bg-gray-50">
                                         <td class="px-6 py-4 font-medium text-gray-900 align-top"><div class="font-bold">${c.templateName}</div><p class="text-xs text-gray-600 mt-1 whitespace-pre-wrap max-w-xs">${c.templateBody || 'N/A'}</p></td>
                                         <td class="px-6 py-4 align-top"><div class="text-green-600">${c.success_count} Exitosos</div><div class="text-red-600">${c.error_count} con Error</div></td>
@@ -173,7 +185,7 @@
                                             <button onclick="handleDeleteCampaign(${c.id})" class="text-red-600 bg-red-50 hover:bg-red-200 p-2 rounded-full inline-flex" title="Eliminar Campaña"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                         </td>
                                     </tr>
-                                `).join('')}
+                                `).join('') : '<tr><td colspan="5" class="text-center p-8 text-gray-500">No has creado ninguna campaña todavía.</td></tr>'}
                             </tbody>
                         </table>
                     </div>
@@ -190,14 +202,14 @@
                     ${state.user.role === 'admin' ? `<button onclick="openModal('template-modal')" class="bg-[#f58220] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#d9701b] flex items-center space-x-2"><i data-lucide="plus-circle"></i><span>Nueva Plantilla</span></button>` : ''}
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${state.templates.map(t => `<div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col justify-between"><div><h3 class="font-bold text-lg text-[#0033a0]">${t.friendly_name}</h3><p class="text-gray-700 mt-3 text-sm bg-gray-50 p-4 rounded-md border whitespace-pre-wrap">${t.body || '<i>(Sin cuerpo de texto visible)</i>'}</p></div><p class="text-gray-400 mt-4 text-xs pt-4 border-t">SID: ${t.sid}</p></div>`).join('')}
+                        ${state.templates.length > 0 ? state.templates.map(t => `<div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col justify-between"><div><h3 class="font-bold text-lg text-[#0033a0]">${t.friendly_name}</h3><p class="text-gray-700 mt-3 text-sm bg-gray-50 p-4 rounded-md border whitespace-pre-wrap">${t.body || '<i>(Sin cuerpo de texto visible)</i>'}</p></div><p class="text-gray-400 mt-4 text-xs pt-4 border-t">SID: ${t.sid}</p></div>`).join('') : '<p class="text-gray-500 col-span-full">No se encontraron plantillas o no se pudo conectar con Twilio.</p>'}
                     </div>
                 </div>
             `;
         };
         
         const renderUsersPage = async () => {
-            const response = await fetch('/api/users');
+             const response = await fetch('/api/users');
             if(response.ok) state.users = await response.json();
             return `
                 <div class="animate-fade-in">
@@ -213,8 +225,176 @@
                 </div>
             `;
         };
+
+        // --- FUNCIONES PARA REPORTES ---
+        const renderReportsPage = async () => {
+            const filterButtonClass = (limit) => 
+                `px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${state.currentLimit === limit ? 'bg-[#0033a0] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`;
+            
+            return `
+                <div class="animate-fade-in">
+                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
+                        <div>
+                            <h1 class="text-3xl font-bold">Reporte de Mensajes</h1>
+                            <p class="text-gray-500 mt-1">Estado de los mensajes enviados desde tu número de Twilio.</p>
+                        </div>
+                        <div id="report-filters" class="flex flex-wrap gap-2">
+                            <button onclick="handleLimitChange('1000')" class="${filterButtonClass('1000')}">Últimos 1000</button>
+                            <button onclick="handleLimitChange('2000')" class="${filterButtonClass('2000')}">Últimos 2000</button>
+                            <button onclick="handleLimitChange('5000')" class="${filterButtonClass('5000')}">Últimos 5000</button>
+                            <button onclick="handleLimitChange('10000')" class="${filterButtonClass('10000')}">Últimos 10000</button>
+                        </div>
+                    </div>
+                    <div id="report-dashboard" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Las tarjetas de estadísticas se renderizarán aquí -->
+                    </div>
+                    <div class="mt-8">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Detalle de Envíos</h2>
+                            <button onclick="handleDownloadCsv()" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center space-x-2">
+                                <i data-lucide="download"></i><span>Descargar CSV</span>
+                            </button>
+                        </div>
+                        <div id="report-table-container" class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                             <!-- La tabla de detalles se renderizará aquí -->
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderReportCards = (stats) => {
+            const dashboard = document.getElementById('report-dashboard');
+            if (!dashboard) return;
+
+            const statusDetails = {
+                'delivered': { icon: 'check-circle-2', color: 'text-green-600', label: 'Entregados' },
+                'read': { icon: 'eye', color: 'text-sky-600', label: 'Leídos' },
+                'sent': { icon: 'send', color: 'text-blue-600', label: 'Enviados' },
+                'queued': { icon: 'loader-2', color: 'text-gray-500', label: 'En Cola' },
+                'sending': { icon: 'arrow-right-circle', color: 'text-indigo-500', label: 'Enviando' },
+                'failed': { icon: 'x-circle', color: 'text-red-600', label: 'Fallidos' },
+                'undelivered': { icon: 'alert-triangle', color: 'text-yellow-600', label: 'No Entregados' },
+                'canceled': { icon: 'ban', color: 'text-orange-600', label: 'Cancelados' },
+            };
+
+            const sortedStatuses = Object.keys(stats).sort((a, b) => stats[b] - stats[a]);
+            dashboard.innerHTML = '';
+            
+            let totalMessages = 0;
+            sortedStatuses.forEach(status => totalMessages += stats[status]);
+
+            if (totalMessages === 0) {
+                 dashboard.innerHTML = '<div class="text-center p-8 bg-white rounded-2xl shadow-lg col-span-full"><p class="text-gray-500">No se encontraron mensajes para el período seleccionado.</p></div>';
+                 return;
+            }
+
+            sortedStatuses.forEach(status => {
+                const count = stats[status] || 0;
+                if (count > 0) {
+                    const details = statusDetails[status] || { icon: 'help-circle', color: 'text-gray-400', label: status };
+                    dashboard.innerHTML += `
+                        <div class="bg-white p-6 rounded-2xl shadow-lg flex items-start space-x-4">
+                            <div class="p-3 bg-gray-100 rounded-lg">
+                                <i data-lucide="${details.icon}" class="${details.color} w-8 h-8"></i>
+                            </div>
+                            <div>
+                                <p class="text-3xl font-bold text-gray-800">${count}</p>
+                                <p class="text-sm font-medium text-gray-500">${details.label}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            lucide.createIcons();
+        };
+
+        const renderReportTable = (messages) => {
+            const tableContainer = document.getElementById('report-table-container');
+            if (!tableContainer) return;
+
+            if (messages.length === 0) {
+                tableContainer.innerHTML = '<p class="text-center p-8 text-gray-500">No se encontraron mensajes para el período seleccionado.</p>';
+                return;
+            }
+
+            const tableRows = messages.map(msg => `
+                <tr class="bg-white border-b hover:bg-gray-50">
+                    <td class="px-6 py-4">${msg.to}</td>
+                    <td class="px-6 py-4">${msg.date_sent}</td>
+                    <td class="px-6 py-4 text-xs max-w-sm whitespace-pre-wrap">${msg.body}</td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">${msg.status}</span></td>
+                </tr>
+            `).join('');
+
+            tableContainer.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3">Destinatario</th>
+                                <th class="px-6 py-3">Fecha de Envío (Local)</th>
+                                <th class="px-6 py-3">Cuerpo del Mensaje</th>
+                                <th class="px-6 py-3">Estatus</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        };
         
-        const navigateTo = (page) => { state.currentPage = page; render(); };
+        const handleLimitChange = (limit) => {
+            state.currentLimit = limit;
+            navigateTo('reports');
+        };
+
+        const handleDownloadCsv = () => {
+            window.location.href = `/api/reports/download?limit=${state.currentLimit}`;
+        };
+
+        const fetchReportData = async () => {
+            const dashboard = document.getElementById('report-dashboard');
+            const tableContainer = document.getElementById('report-table-container');
+            
+            const showLoading = () => {
+                const loadingHTML = `
+                    <div class="text-center p-8 bg-white rounded-2xl shadow-lg col-span-full flex flex-col items-center justify-center">
+                        <i data-lucide="loader-2" class="w-10 h-10 text-gray-400 animate-spin"></i>
+                        <p class="text-gray-500 mt-4">Cargando datos del reporte...</p>
+                    </div>`;
+                if(dashboard) dashboard.innerHTML = loadingHTML;
+                if(tableContainer) tableContainer.innerHTML = '<div class="text-center p-8"><i data-lucide="loader-2" class="w-6 h-6 text-gray-400 animate-spin mx-auto"></i></div>';
+                lucide.createIcons();
+            };
+
+            showLoading();
+
+            try {
+                const res = await fetch(`/api/reports?limit=${state.currentLimit}`);
+                if (!res.ok) throw new Error('La respuesta del servidor no fue OK');
+                state.reportsData = await res.json();
+                renderReportCards(state.reportsData.stats);
+                renderReportTable(state.reportsData.messages);
+            } catch (error) {
+                console.error("Fallo al obtener reportes:", error);
+                const errorHTML = '<div class="text-center p-8 bg-white rounded-2xl shadow-lg col-span-full"><p class="text-red-500">Error al cargar los datos del reporte.</p></div>';
+                if(dashboard) dashboard.innerHTML = errorHTML;
+                if(tableContainer) tableContainer.innerHTML = errorHTML;
+            }
+        };
+
+        // --- NAVEGACIÓN Y MANEJADORES DE EVENTOS ---
+        
+        const navigateTo = async (page) => {
+            state.currentPage = page;
+            await render();
+            if (page === 'reports') {
+                await fetchReportData();
+            }
+        };
 
         const handleLogin = async (e) => {
             e.preventDefault();
@@ -355,6 +535,7 @@
         const toggleScheduleDate = (show) => document.getElementById('schedule-date-container').hidden = !show;
         
         document.addEventListener('DOMContentLoaded', async () => {
+            document.title = `${APP_TITLE} - Anáhuac Mayab`;
             const res = await fetch('/api/session');
             const data = await res.json();
             if (data.user) { state.user = data.user; navigateTo('dashboard'); } 
