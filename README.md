@@ -38,33 +38,40 @@ _git clone [https://github.com/gvaldezr/flask-whatsapp-sender.git](https://githu
 cd flask-whatsapp-sender_
 
 Configurar las variables de entorno:
+
 _Crea un archivo .env a partir del ejemplo y llénalo con tus credenciales.
 _
 _cp .env.example .env
 nano .env_
 
 Crear directorios necesarios:
+
 Estos directorios son para la base de datos y los archivos CSV subidos.
 
 _mkdir instance
 mkdir uploads_
 
 Construir y levantar los contenedores:
+
 Este comando construirá las imágenes de Docker y lanzará los servicios en segundo plano.
 
 _sudo docker-compose up --build -d_
 
 Inicializar la base de datos:
+
 Ejecuta este comando una única vez para crear las tablas y los usuarios iniciales.
 
 _sudo docker-compose exec web flask init-db_
 
 Configurar el Proxy Inverso:
+
 Configura tu servidor web (Apache o Nginx) para redirigir el tráfico de una ruta específica (ej. /wp) al contenedor de la aplicación en http://localhost:5001.
 
 🐞 Correcciones Implementadas en v1.0.0
+
 Solucionado error de conexión a la base de datos que ocurría durante el primer arranque de los contenedores.
 
 Corregido un error de JavaScript (lucide is not defined) que impedía la correcta visualización de los íconos en el frontend.
 
-Creado con ❤️ para Anáhuac Mayab.
+**
+_Creado con ❤️ para Anáhuac Mayab._**
