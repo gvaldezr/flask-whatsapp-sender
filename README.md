@@ -3,6 +3,7 @@
 Aplicación de Página Única (SPA) desarrollada con Flask para la gestión y envío de campañas de marketing masivas a través de la API de WhatsApp de Twilio. El proyecto está diseñado para ser desplegado fácilmente como un servicio contenerizado utilizando Docker Compose.
 
 **✨ Características Principales**
+
 Despliegue Sencillo con Docker: Todo el entorno (Flask, Celery, Redis) está orquestado con Docker Compose para un despliegue rápido y consistente.
 
 Envío de Campañas Masivas: Permite subir listas de contactos en formato CSV para enviar mensajes masivos basados en plantillas de Twilio.
@@ -16,9 +17,11 @@ Gestión de Usuarios: Sistema de autenticación con roles (administrador y está
 Seguimiento de Campañas: Visualiza el estado de cada campaña (En Cola, Procesando, Enviada, etc.) y los resultados (envíos exitosos y con error).
 
 **🚀 Despliegue**
+
 Esta aplicación está configurada para funcionar detrás de un proxy inverso (como Apache o Nginx). La configuración base está preparada para que la aplicación sea accesible desde una subruta (por ejemplo, http://tudominio.com/wp).
 
 **Prerrequisitos**
+
 Un servidor con Ubuntu 22.04 LTS (o similar).
 
 Docker y Docker Compose instalados.
@@ -28,6 +31,7 @@ Git.
 Credenciales de una cuenta de Twilio (Account SID, Auth Token, Messaging Service SID).
 
 **Pasos de Instalación**
+
 Clonar el repositorio:
 
 _git clone [https://github.com/gvaldezr/flask-whatsapp-sender.git](https://github.com/gvaldezr/flask-whatsapp-sender.git)
