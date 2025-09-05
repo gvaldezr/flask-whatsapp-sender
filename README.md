@@ -34,6 +34,7 @@ Credenciales de una cuenta de Twilio (Account SID, Auth Token, Messaging Service
 
 Clonar el repositorio:
 
+
 git clone [https://github.com/gvaldezr/flask-whatsapp-sender.git](https://github.com/gvaldezr/flask-whatsapp-sender.git)
 
 cd flask-whatsapp-sender
@@ -46,21 +47,26 @@ cp .env.example .env
 
 nano .env
 
+
 Crear directorios necesarios:
 
 Estos directorios son para la base de datos y los archivos CSV subidos.
+
 
 
 mkdir instance
 
 mkdir uploads
 
+
 Construir y levantar los contenedores:
 
 Este comando construirá las imágenes de Docker y lanzará los servicios en segundo plano.
 
 
+
 sudo docker-compose up --build -d
+
 
 
 Inicializar la base de datos:
@@ -68,7 +74,9 @@ Inicializar la base de datos:
 Ejecuta este comando una única vez para crear las tablas y los usuarios iniciales.
 
 
+
 sudo docker-compose exec web flask init-db
+
 
 
 Configurar el Proxy Inverso:
@@ -81,5 +89,5 @@ Solucionado error de conexión a la base de datos que ocurría durante el primer
 
 Corregido un error de JavaScript (lucide is not defined) que impedía la correcta visualización de los íconos en el frontend.
 
-**
-_Creado con ❤️ para Anáhuac Mayab._**
+**_Creado con ❤️ para Anáhuac Mayab._**
+

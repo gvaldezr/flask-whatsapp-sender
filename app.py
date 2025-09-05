@@ -1,8 +1,8 @@
 import os
 import csv
 import re
-from datetime import datetime
-from flask import Flask, render_template, request, jsonify, session
+from datetime import datetime, timedelta
+from flask import Flask, render_template, request, jsonify, session, Response
 from flask_sqlalchemy import SQLAlchemy
 from twilio.rest import Client
 from dotenv import load_dotenv
@@ -10,27 +10,24 @@ import json
 import requests
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-from celery import Celery, Task
-from werkzeug.middleware.proxy_fix import ProxyFix
+from celery import Celery
+import pytz 
+import io 
+
 # --- Cargar variables de entorno desde el archivo .env ---
 load_dotenv()
 
+# --- NUEVA VARIABLE PARA EL TÍTULO ---
+APP_TITLE = os.getenv('APP_TITLE', 'WhatsApp Campaigns')
+
 # --- Configuración de Flask ---
 app = Flask(__name__)
-# --- Cambio Requerido: Añadir el middleware ProxyFix ---
-# Esta línea le permite a Flask entender que está detrás de un proxy (Apache)
-# y manejar correctamente las URLs bajo el prefijo /wp
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-# Ubicación de la base de datos SQLite
-# NOTA: La ruta se mantiene simple, Docker se encargará de la persistencia con volúmenes.
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///whatsapp_campaigns.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///instance/whatsapp_campaigns.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'a-default-secret-key')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
 # --- Configuración de Celery ---
-# MODIFICACIÓN CLAVE: Usar variables de entorno para que apunte al contenedor de Redis.
-# 'redis' es el nombre del servicio en docker-compose.yml
 app.config['CELERY_BROKER_URL'] = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
 app.config['CELERY_RESULT_BACKEND'] = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
 
@@ -45,7 +42,7 @@ def make_celery(app):
     )
     celery.conf.update(app.config)
 
-    class ContextTask(Task):
+    class ContextTask(celery.Task):
         def __call__(self, *args, **kwargs):
             with app.app_context():
                 return self.run(*args, **kwargs)
@@ -54,7 +51,6 @@ def make_celery(app):
     return celery
 
 celery = make_celery(app)
-
 
 # --- Configuración del cliente de Twilio ---
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
@@ -73,7 +69,6 @@ def admin_required(f):
     return decorated_function
 
 # --- Modelos de la Base de Datos ---
-
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -117,10 +112,9 @@ class CampaignError(db.Model):
     def to_dict(self):
         return {'phone': self.recipient_phone, 'error': self.error_message}
 
-# --- Tarea de Celery para procesar la campaña en segundo plano ---
+# --- Tarea de Celery ---
 @celery.task
 def process_campaign_task(campaign_id, temp_csv_path, template_sid, schedule_type, scheduled_at_str):
-    # Ya no se necesita el with app.app_context() gracias a la clase ContextTask
     campaign = Campaign.query.get(campaign_id)
     if not campaign:
         print(f"Error: No se encontró la campaña con ID {campaign_id}")
@@ -130,20 +124,13 @@ def process_campaign_task(campaign_id, temp_csv_path, template_sid, schedule_typ
     db.session.commit()
 
     recipients = []
-    try:
-        with open(temp_csv_path, 'r', encoding='utf-8') as f:
-            csv_reader = csv.reader(f)
-            for row in csv_reader:
-                if len(row) >= 2 and row[0] and row[1]:
-                    recipients.append({'phone': row[0], 'name': row[1]})
-        
-        os.remove(temp_csv_path)
-    except FileNotFoundError:
-        print(f"Error: El archivo temporal {temp_csv_path} no fue encontrado. La tarea no puede continuar.")
-        campaign.status = 'Error Interno'
-        db.session.commit()
-        return
-
+    with open(temp_csv_path, 'r', encoding='utf-8') as f:
+        csv_reader = csv.reader(f)
+        for row in csv_reader:
+            if len(row) >= 2 and row[0] and row[1]:
+                recipients.append({'phone': row[0], 'name': row[1]})
+    
+    os.remove(temp_csv_path)
 
     success_count = 0
     error_count = 0
@@ -188,7 +175,7 @@ def process_campaign_task(campaign_id, temp_csv_path, template_sid, schedule_typ
 
     db.session.commit()
 
-# --- Función para limpiar mensajes de error de Twilio ---
+# --- Funciones Auxiliares ---
 def clean_twilio_error(error_string):
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     clean_string = ansi_escape.sub('', error_string)
@@ -199,12 +186,46 @@ def clean_twilio_error(error_string):
         return final_message.strip()
     return clean_string
 
+def get_message_data(limit):
+    """Función auxiliar para obtener y procesar datos de mensajes de Twilio."""
+    from_number = WPNUMBER
+    if not from_number.startswith('whatsapp:'):
+        from_number = f"whatsapp:{from_number}"
+    
+    messages = twilio_client.messages.list(
+        from_=from_number,
+        limit=int(limit)
+    )
+    
+    status_counts = {
+        'delivered': 0, 'read': 0, 'sent': 0, 'queued': 0, 'sending': 0,
+        'failed': 0, 'undelivered': 0, 'canceled': 0
+    }
+    
+    message_details = []
+    local_tz = pytz.timezone('America/Mexico_City') # Zona horaria local
+
+    for record in messages:
+        if record.status in status_counts:
+            status_counts[record.status] += 1
+        
+        # Convertir fecha a zona horaria local
+        date_sent_local = record.date_sent.replace(tzinfo=pytz.utc).astimezone(local_tz) if record.date_sent else None
+
+        message_details.append({
+            "to": record.to,
+            "date_sent": date_sent_local.strftime('%Y-%m-%d %H:%M:%S') if date_sent_local else 'N/A',
+            "body": record.body,
+            "status": record.status
+        })
+            
+    return {"stats": status_counts, "messages": message_details}
+
 # --- Rutas de la Aplicación ---
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', app_title=APP_TITLE)
 
-# ... (El resto de tus rutas @app.route se mantienen exactamente igual) ...
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
@@ -258,11 +279,12 @@ def update_user(user_id):
 @admin_required
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
-    if session.get('user') and user.id == session['user']['uid']:
+    if user.id == session['user']['uid']:
         return jsonify({'message': 'No puedes eliminar tu propia cuenta'}), 400
     db.session.delete(user)
     db.session.commit()
     return jsonify({'success': True})
+
 
 @app.route('/api/templates', methods=['GET'])
 def get_templates():
@@ -275,12 +297,10 @@ def get_templates():
             if t.friendly_name and t.friendly_name.lower().startswith('egresados'):
                 body = ""
                 if t.types:
-                    if 'twilio/text' in t.types: body = t.types['twilio/text'].get('body', '')
-                    elif 'twilio/call-to-action' in t.types: body = t.types['twilio/call-to-action'].get('body', '')
-                    elif 'twilio/media' in t.types: body = t.types['twilio/media'].get('body', '')
-                    elif 'twilio/whatsapp-template' in t.types: body = t.types['twilio/whatsapp-template'].get('body', '')
-                    elif 'twilio/flows' in t.types: body = t.types['twilio/flows'].get('body', '')
-                    elif 'whatsapp/card' in t.types: body = t.types['whatsapp/card'].get('body', '')
+                    for template_type in ['twilio/text', 'twilio/media', 'twilio/whatsapp-template', 'whatsapp/card', 'twilio/call-to-action', 'twilio/flows']:
+                        if template_type in t.types:
+                            body = t.types[template_type].get('body', '')
+                            break
                 filtered_templates.append({'sid': t.sid, 'friendly_name': t.friendly_name, 'body': body})
         return jsonify(filtered_templates)
     except Exception as e:
@@ -342,12 +362,12 @@ def create_template():
         print(f"Error inesperado al crear plantilla: {e}")
         return jsonify({'message': 'Ocurrió un error inesperado.'}), 500
 
-
 @app.route('/api/campaigns', methods=['GET'])
 def get_campaigns():
     if 'user' not in session: return jsonify({'message': 'No autorizado'}), 403
     user_campaigns = Campaign.query.filter_by(user_id=session['user']['uid']).order_by(Campaign.created_at.desc()).all()
     return jsonify([c.to_dict() for c in user_campaigns])
+
 
 @app.route('/api/campaigns/<int:campaign_id>/errors', methods=['GET'])
 def get_campaign_errors(campaign_id):
@@ -369,12 +389,10 @@ def create_campaign():
     try:
         content = twilio_client.content.v1.contents(template_sid).fetch()
         if content.types:
-            if 'twilio/text' in content.types: template_body = content.types['twilio/text'].get('body', '')
-            elif 'twilio/call-to-action' in content.types: template_body = content.types['twilio/call-to-action'].get('body', '')
-            elif 'twilio/media' in content.types: template_body = content.types['twilio/media'].get('body', '')
-            elif 'twilio/whatsapp-template' in content.types: template_body = content.types['twilio/whatsapp-template'].get('body', '')
-            elif 'twilio/flows' in content.types: template_body = content.types['twilio/flows'].get('body', '')
-            elif 'whatsapp/card' in content.types: template_body = content.types['whatsapp/card'].get('body', '')
+            for template_type in ['twilio/text', 'twilio/media', 'twilio/whatsapp-template', 'whatsapp/card', 'twilio/call-to-action', 'twilio/flows']:
+                if template_type in content.types:
+                    template_body = content.types[template_type].get('body', '')
+                    break
     except Exception as e:
         print(f"No se pudo obtener el cuerpo de la plantilla {template_sid}: {e}")
 
@@ -383,7 +401,7 @@ def create_campaign():
     
     csv_content = csv_file.stream.read().decode("utf-8")
     csv_file.stream.seek(0) 
-    recipients_count = len(csv_content.splitlines()) -1 # Restar el encabezado
+    recipients_count = len(csv_content.splitlines())
 
     scheduled_at_utc = datetime.fromisoformat(scheduled_at_str.replace('Z', '+00:00')) if schedule_type == 'later' and scheduled_at_str else datetime.utcnow()
     
@@ -399,12 +417,13 @@ def create_campaign():
     db.session.commit()
 
     temp_csv_path = os.path.join(app.config['UPLOAD_FOLDER'], f"campaign_{new_campaign.id}.csv")
-    with open(temp_csv_path, 'w', newline='', encoding='utf-8') as f:
+    with open(temp_csv_path, 'w', encoding='utf-8') as f:
         f.write(csv_content)
 
     process_campaign_task.delay(new_campaign.id, temp_csv_path, template_sid, schedule_type, scheduled_at_str)
 
     return jsonify(new_campaign.to_dict()), 202
+
 
 @app.route('/api/campaigns/<int:campaign_id>', methods=['DELETE'])
 def delete_campaign(campaign_id):
@@ -415,10 +434,61 @@ def delete_campaign(campaign_id):
     return jsonify({'success': True})
 
 
-# --- Comandos CLI ---
+# --- RUTA DE REPORTES MODIFICADA ---
+@app.route('/api/reports', methods=['GET'])
+def get_reports():
+    if 'user' not in session:
+        return jsonify({'message': 'No autorizado'}), 403
+    if not twilio_client or not WPNUMBER:
+        return jsonify({'message': 'Twilio no está configurado en el servidor.'}), 500
+    
+    limit = request.args.get('limit', '1000') # Default to 1000 messages
+        
+    try:
+        data = get_message_data(limit)
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error al obtener reportes de Twilio: {e}")
+        return jsonify({'message': 'No se pudieron obtener los reportes de Twilio.'}), 500
+
+# --- NUEVA RUTA PARA DESCARGAR CSV ---
+@app.route('/api/reports/download', methods=['GET'])
+def download_report():
+    if 'user' not in session:
+        return jsonify({'message': 'No autorizado'}), 403
+    
+    limit = request.args.get('limit', '1000')
+
+    try:
+        data = get_message_data(limit)
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Escribir cabeceras
+        writer.writerow(['Destinatario', 'Fecha de Envío (Local)', 'Cuerpo del Mensaje', 'Estatus'])
+        
+        # Escribir datos
+        for message in data['messages']:
+            writer.writerow([message['to'], message['date_sent'], message['body'], message['status']])
+        
+        output.seek(0)
+        
+        return Response(
+            output,
+            mimetype="text/csv",
+            headers={"Content-Disposition": f"attachment;filename=reporte_mensajes_{datetime.now().strftime('%Y%m%d')}.csv"}
+        )
+
+    except Exception as e:
+        print(f"Error al generar CSV: {e}")
+        return jsonify({'message': 'No se pudo generar el reporte en CSV.'}), 500
+
+# --- Comandos de CLI ---
 @app.cli.command("init-db")
 def init_db_command():
-    """Inicializa la base de datos y crea usuarios por defecto."""
+    if not os.path.exists('instance'):
+        os.makedirs('instance')
     db.create_all()
     if not User.query.filter_by(email='admin@example.com').first():
         admin = User(email='admin@example.com', role='admin')
@@ -431,7 +501,7 @@ def init_db_command():
     db.session.commit()
     print("Base de datos inicializada y usuarios creados con contraseña 'password'.")
 
-# Esta sección ya no es necesaria para producción con Gunicorn/Docker,
-# pero se mantiene para facilitar la ejecución local si se desea.
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5001, host='0.0.0.0')
+    app.run(debug=True, port=5001)
+
