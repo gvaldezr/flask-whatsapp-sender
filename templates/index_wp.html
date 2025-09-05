@@ -182,7 +182,7 @@
         `;
 
         const renderDashboardPage = async () => {
-            const response = await fetch('/api/campaigns');
+            const response = await fetch('wp/api/campaigns');
             state.campaigns = await response.json();
             const getStatusChip = (s) => ({ 'Enviada': 'bg-green-100 text-green-800', 'Programada': 'bg-yellow-100 text-yellow-800', 'Enviando': 'bg-blue-100 text-blue-800', 'Error': 'bg-red-100 text-red-800', 'Error en Programación': 'bg-red-100 text-red-800', 'En Cola': 'bg-gray-100 text-gray-800', 'Procesando': 'bg-purple-100 text-purple-800 animate-pulse', 'Programada con Errores': 'bg-yellow-100 text-yellow-800', 'Enviada con Errores': 'bg-red-100 text-red-800' }[s] || 'bg-gray-100');
             return `
@@ -242,7 +242,7 @@
         };
         
         const renderUsersPage = async () => {
-             const response = await fetch('/api/users');
+             const response = await fetch('wp/api/users');
             if(response.ok) state.users = await response.json();
             return `
                 <div class="animate-fade-in">
@@ -415,7 +415,7 @@
                 await fetchReportData();
             }
             if (page === 'templates') {
-                const response = await fetch('/api/templates');
+                const response = await fetch('wp/api/templates');
                 if(response.ok) {
                     state.templates = await response.json();
                     handleTemplateFilter(state.templateFilter);
@@ -427,12 +427,12 @@
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-            const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+            const res = await fetch('wp/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
             const data = await res.json();
             if (data.success) { 
                 state.user = data.user;
                 if (state.user.role === 'admin') {
-                    const numbersRes = await fetch('/api/sending_numbers');
+                    const numbersRes = await fetch('wp/api/sending_numbers');
                     if (numbersRes.ok) {
                         state.sendingNumbers = await numbersRes.json();
                         const firstArea = Object.keys(state.sendingNumbers)[0];
@@ -446,7 +446,7 @@
         };
 
         window.handleLogout = async () => {
-            await fetch('/api/logout', { method: 'POST' });
+            await fetch('wp/api/logout', { method: 'POST' });
             state.user = null;
             window.location.reload();
         };
@@ -458,7 +458,7 @@
             const password = document.getElementById('user-password').value;
             const role = document.getElementById('user-role').value;
             const area = document.getElementById('user-area').value;
-            const url = userId ? `/api/users/${userId}` : '/api/users';
+            const url = userId ? `wp/api/users/${userId}` : 'wp/api/users';
             const method = userId ? 'PUT' : 'POST';
             const body = { email, role, area: role === 'standard' ? area : null };
             if (password) body.password = password;
@@ -469,7 +469,7 @@
 
         window.handleDeleteUser = async (userId) => {
             if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
-                const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+                const res = await fetch(`wp/api/users/${userId}`, { method: 'DELETE' });
                 if (res.ok) { navigateTo('users'); } 
                 else { const err = await res.json(); alert(`Error: ${err.message}`); }
             }
@@ -502,7 +502,7 @@
                 payload.mediaUrl = mediaUrl;
             }
             
-            const res = await fetch('/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const res = await fetch('wp/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             const data = await res.json();
             if (res.ok) {
                 alert('Plantilla enviada a aprobación con SID: ' + data.sid);
@@ -529,21 +529,21 @@
                 }
             }
 
-            const res = await fetch('/api/campaigns', { method: 'POST', body: formData });
+            const res = await fetch('wp/api/campaigns', { method: 'POST', body: formData });
             if (res.ok) { closeModal('campaign-modal'); navigateTo('dashboard'); } 
             else { const err = await res.json(); alert(`Error: ${err.message}`); }
         };
 
         window.handleDeleteCampaign = async (campaignId) => {
             if (confirm('¿Estás seguro de que quieres eliminar esta campaña?')) {
-                const res = await fetch(`/api/campaigns/${campaignId}`, { method: 'DELETE' });
+                const res = await fetch(`wp/api/campaigns/${campaignId}`, { method: 'DELETE' });
                 if (res.ok) { navigateTo('dashboard'); } 
                 else { const err = await res.json(); alert(`Error: ${err.message}`); }
             }
         };
 
         window.openCampaignModal = async () => {
-            const res = await fetch('/api/templates');
+            const res = await fetch('wp/api/templates');
             const templates = await res.json();
             
             templates.sort((a, b) => a.friendly_name.localeCompare(b.friendly_name));
@@ -566,7 +566,7 @@
         };
         
         window.openErrorModal = async (campaignId) => {
-            const res = await fetch(`/api/campaigns/${campaignId}/errors`);
+            const res = await fetch(`wp/api/campaigns/${campaignId}/errors`);
             const errors = await res.json();
             const errorList = document.getElementById('error-list');
             errorList.innerHTML = '';
@@ -586,7 +586,7 @@
         };
 
         window.handleDownloadCsv = () => {
-            let apiUrl = `/api/reports/download?limit=${state.currentLimit}`;
+            let apiUrl = `wp/api/reports/download?limit=${state.currentLimit}`;
             if (state.user.role === 'admin') {
                 apiUrl += `&from_area=${state.reportFromArea}`;
             }
@@ -606,7 +606,7 @@
 
             showLoading();
 
-            let apiUrl = `/api/reports?limit=${state.currentLimit}`;
+            let apiUrl = `wp/api/reports?limit=${state.currentLimit}`;
             if (state.user.role === 'admin') {
                 apiUrl += `&from_area=${state.reportFromArea}`;
             }
@@ -649,12 +649,12 @@
         
         document.addEventListener('DOMContentLoaded', async () => {
             document.title = `${APP_TITLE} - Anáhuac Mayab`;
-            const sessionRes = await fetch('/api/session');
+            const sessionRes = await fetch('wp/api/session');
             const data = await sessionRes.json();
             if (data.user) { 
                 state.user = data.user; 
                 if(state.user.role === 'admin') {
-                    const numbersRes = await fetch('/api/sending_numbers');
+                    const numbersRes = await fetch('wp/api/sending_numbers');
                     if (numbersRes.ok) {
                         state.sendingNumbers = await numbersRes.json();
                         const firstArea = Object.keys(state.sendingNumbers)[0];
