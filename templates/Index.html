@@ -24,7 +24,6 @@
     </div>
 
     <!-- MODALES -->
-    <!-- Modal para crear plantilla -->
     <div id="template-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" hidden>
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
             <div class="flex justify-between items-center p-5 border-b border-gray-200">
@@ -61,7 +60,6 @@
             </div>
         </div>
     </div>
-    <!-- Modal para ver errores de campaña -->
     <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" hidden>
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
             <div class="flex justify-between items-center p-5 border-b border-gray-200">
@@ -81,7 +79,6 @@
             </div>
         </div>
     </div>
-    <!-- Modal para crear/editar usuario -->
     <div id="user-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" hidden>
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
             <div class="flex justify-between items-center p-5 border-b"><h3 id="user-modal-title" class="text-xl font-bold">Crear Usuario</h3><button onclick="closeModal('user-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button></div>
@@ -90,28 +87,45 @@
                     <input type="hidden" id="user-id" name="userId">
                     <div><label for="user-email" class="block text-sm font-medium">Email</label><input id="user-email" type="email" class="mt-1 w-full p-3 border rounded-lg" required></div>
                     <div><label for="user-password" class="block text-sm font-medium">Contraseña</label><input id="user-password" type="password" placeholder="Dejar en blanco para no cambiar" class="mt-1 w-full p-3 border rounded-lg"></div>
-                    <div><label for="user-role" class="block text-sm font-medium">Rol</label><select id="user-role" class="mt-1 w-full p-3 bg-gray-100 border rounded-lg"><option value="standard">Estándar</option><option value="admin">Administrador</option></select></div>
+                    <div>
+                        <label for="user-role" class="block text-sm font-medium">Rol</label>
+                        <select id="user-role" class="mt-1 w-full p-3 bg-gray-100 border rounded-lg">
+                            <option value="standard">Estándar</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <div id="area-selector-container" hidden>
+                        <label for="user-area" class="block text-sm font-medium">Área</label>
+                        <select id="user-area" class="mt-1 w-full p-3 bg-gray-100 border rounded-lg">
+                            <option value="dti">DTI</option>
+                            <option value="caa">CAA</option>
+                            <option value="egresados">Egresados</option>
+                        </select>
+                    </div>
                     <button type="submit" class="w-full bg-[#0033a0] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#00287a] flex items-center justify-center space-x-2"><i data-lucide="save" class="w-5 h-5"></i><span>Guardar Usuario</span>
                     </button>
                 </form>
             </div>
-            <div class="flex justify-end p-4 bg-gray-50 border-t rounded-b-2xl"><button type="button" onclick="closeModal('user-modal')" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Cerrar</button></div>
         </div>
     </div>
-    <!-- Modal para crear campaña -->
     <div id="campaign-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" hidden>
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
             <div class="flex justify-between items-center p-5 border-b"><h3 class="text-xl font-bold">Crear Nueva Campaña</h3><button onclick="closeModal('campaign-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button></div>
             <div class="p-6">
                 <form id="campaign-form" class="space-y-6">
                     <input type="hidden" name="templateName" id="campaign-template-name">
-                    <div><label class="block text-sm font-bold mb-2">1. Selecciona Plantilla</label><select id="campaign-template-select" name="templateId" class="w-full p-3 bg-gray-100 border rounded-lg"></select></div>
-                    <div><label class="block text-sm font-bold mb-2">2. Sube contactos (CSV)</label><input id="csv-file-input" type="file" name="csvFile" accept=".csv" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-orange-50 file:text-[#f58220] hover:file:bg-orange-100"></div>
+                    
+                    <div id="from-number-selector-container" hidden>
+                        <label class="block text-sm font-bold mb-2">0. Enviar desde</label>
+                        <select id="from-area-select" name="fromArea" class="w-full p-3 bg-gray-100 border rounded-lg"></select>
+                    </div>
+
+                    <div><label class="block text-sm font-bold mb-2">1. Selecciona Plantilla</label><select id="campaign-template-select" name="templateId" class="w-full p-3 bg-gray-100 border rounded-lg" required></select></div>
+                    <div><label class="block text-sm font-bold mb-2">2. Sube contactos (CSV)</label><input id="csv-file-input" type="file" name="csvFile" accept=".csv" required class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-orange-50 file:text-[#f58220] hover:file:bg-orange-100"></div>
                     <div><label class="block text-sm font-bold mb-2">3. Elige cuándo enviar</label><div class="flex space-x-4"><label class="flex items-center"><input type="radio" name="scheduleType" value="now" checked onchange="toggleScheduleDate(false)" class="form-radio text-[#0033a0]"> <span class="ml-2">Enviar ahora</span></label><label class="flex items-center"><input type="radio" name="scheduleType" value="later" onchange="toggleScheduleDate(true)" class="form-radio text-[#0033a0]"> <span class="ml-2">Programar</span></label></div><div id="schedule-date-container" class="mt-3" hidden><input type="datetime-local" name="scheduledAt" class="w-full p-3 bg-gray-100 border rounded-lg"><p class="text-xs text-yellow-600 mt-1"><b>Atención:</b> La hora se programará en tu zona horaria local.</p></div></div>
                     <button type="submit" class="w-full bg-[#0033a0] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#00287a] flex items-center justify-center space-x-2"><i data-lucide="send" class="w-5 h-5"></i><span>Lanzar Campaña</span></button>
                 </form>
             </div>
-            <div class="flex justify-end p-4 bg-gray-50 border-t rounded-b-2xl"><button type="button" onclick="closeModal('campaign-modal')" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Cancelar</button></div>
         </div>
     </div>
 
@@ -121,11 +135,15 @@
         const state = { 
             user: null, 
             currentPage: 'login', 
-            templates: [], 
+            templates: [],
+            filteredTemplates: [],
+            templateFilter: 'all',
             campaigns: [], 
             users: [],
             reportsData: { stats: {}, messages: [] },
-            currentLimit: '1000' // Límite por defecto
+            currentLimit: '1000',
+            sendingNumbers: {},
+            reportFromArea: 'default'
         };
         const appContainer = document.getElementById('app-container');
 
@@ -160,7 +178,7 @@
         };
 
         const renderLoginPage = () => `
-            <div class="flex items-center justify-center h-screen"><div class="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-xl"><div class="text-center"><h1 class="text-4xl font-bold text-[#f58220]">Bienvenido</h1><p class="mt-2 text-gray-600">Inicia sesión para gestionar tus campañas.</p></div><form id="login-form" class="space-y-6"><div><label for="login-email" class="sr-only">Email</label><input id="login-email" type="email" placeholder="email@example.com" class="w-full px-4 py-3 border rounded-lg" required></div><div><label for="login-password" class="sr-only">Contraseña</label><input id="login-password" type="password" placeholder="Contraseña" class="w-full px-4 py-3 border rounded-lg" required></div><button type="submit" class="w-full flex justify-center items-center py-3 px-4 text-white bg-[#f58220] rounded-lg hover:bg-[#d9701b]"><i data-lucide="log-in" class="mr-2 w-5 h-5"></i>Iniciar Sesión</button></form></div></div>
+            <div class="flex items-center justify-center h-screen"><div class="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-xl"><div class="text-center"><h1 class="text-4xl font-bold text-[#f58220]">Bienvenido a ${APP_TITLE}</h1><p class="mt-2 text-gray-600">Inicia sesión para gestionar tus campañas.</p></div><form id="login-form" class="space-y-6"><div><label for="login-email" class="sr-only">Email</label><input id="login-email" type="email" placeholder="email@example.com" class="w-full px-4 py-3 border rounded-lg" required></div><div><label for="login-password" class="sr-only">Contraseña</label><input id="login-password" type="password" placeholder="Contraseña" class="w-full px-4 py-3 border rounded-lg" required></div><button type="submit" class="w-full flex justify-center items-center py-3 px-4 text-white bg-[#f58220] rounded-lg hover:bg-[#d9701b]"><i data-lucide="log-in" class="mr-2 w-5 h-5"></i>Iniciar Sesión</button></form></div></div>
         `;
 
         const renderDashboardPage = async () => {
@@ -194,15 +212,30 @@
         };
 
         const renderTemplatesPage = async () => {
-            const response = await fetch('/api/templates');
-            if(response.ok) state.templates = await response.json();
+            const filterButtonClass = (area) => 
+                `px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${state.templateFilter === area ? 'bg-[#0033a0] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`;
+            
+            const adminFilters = state.user.role === 'admin' ? `
+                <div id="template-filters" class="flex flex-wrap gap-2">
+                    <button onclick="handleTemplateFilter('all')" class="${filterButtonClass('all')}">Todos</button>
+                    <button onclick="handleTemplateFilter('dti')" class="${filterButtonClass('dti')}">DTI</button>
+                    <button onclick="handleTemplateFilter('caa')" class="${filterButtonClass('caa')}">CAA</button>
+                    <button onclick="handleTemplateFilter('egresados')" class="${filterButtonClass('egresados')}">Egresados</button>
+                </div>
+            ` : '';
+
             return `
                 <div class="animate-fade-in">
-                    <div class="flex justify-between items-center mb-6"><div><h1 class="text-3xl font-bold">Plantillas de Twilio</h1><p class="text-gray-500 mt-1">Estas son tus plantillas disponibles en Twilio.</p></div>
-                    ${state.user.role === 'admin' ? `<button onclick="openModal('template-modal')" class="bg-[#f58220] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#d9701b] flex items-center space-x-2"><i data-lucide="plus-circle"></i><span>Nueva Plantilla</span></button>` : ''}
+                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
+                        <div>
+                            <h1 class="text-3xl font-bold">Plantillas de Twilio</h1>
+                            <p class="text-gray-500 mt-1">Estas son tus plantillas disponibles en Twilio.</p>
+                        </div>
+                        ${adminFilters}
+                        ${state.user.role === 'admin' ? `<button onclick="openModal('template-modal')" class="bg-[#f58220] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#d9701b] flex items-center space-x-2"><i data-lucide="plus-circle"></i><span>Nueva Plantilla</span></button>` : ''}
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${state.templates.length > 0 ? state.templates.map(t => `<div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col justify-between"><div><h3 class="font-bold text-lg text-[#0033a0]">${t.friendly_name}</h3><p class="text-gray-700 mt-3 text-sm bg-gray-50 p-4 rounded-md border whitespace-pre-wrap">${t.body || '<i>(Sin cuerpo de texto visible)</i>'}</p></div><p class="text-gray-400 mt-4 text-xs pt-4 border-t">SID: ${t.sid}</p></div>`).join('') : '<p class="text-gray-500 col-span-full">No se encontraron plantillas o no se pudo conectar con Twilio.</p>'}
+                        ${state.filteredTemplates.length > 0 ? state.filteredTemplates.map(t => `<div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col justify-between"><div><h3 class="font-bold text-lg text-[#0033a0]">${t.friendly_name}</h3><p class="text-gray-700 mt-3 text-sm bg-gray-50 p-4 rounded-md border whitespace-pre-wrap">${t.body || '<i>(Sin cuerpo de texto visible)</i>'}</p></div><p class="text-gray-400 mt-4 text-xs pt-4 border-t">SID: ${t.sid}</p></div>`).join('') : '<p class="text-gray-500 col-span-full">No se encontraron plantillas para el filtro seleccionado.</p>'}
                     </div>
                 </div>
             `;
@@ -216,21 +249,38 @@
                     <div class="flex justify-between items-center mb-6"><div><h1 class="text-3xl font-bold">Gestión de Usuarios</h1><p class="text-gray-500 mt-1">Crea, edita y elimina usuarios.</p></div><button onclick="openUserModal()" class="bg-[#f58220] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#d9701b] flex items-center space-x-2"><i data-lucide="user-plus"></i><span>Nuevo Usuario</span></button></div>
                     <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
                         <table class="w-full text-sm text-left">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Email</th><th class="px-6 py-3">Rol</th><th class="px-6 py-3 text-center">Acciones</th></tr></thead>
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Email</th><th class="px-6 py-3">Rol</th><th class="px-6 py-3">Área</th><th class="px-6 py-3 text-center">Acciones</th></tr></thead>
                             <tbody>
-                                ${state.users.map(u => `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4 font-medium text-gray-900">${u.email}</td><td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${u.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">${u.role}</span></td><td class="px-6 py-4 text-center space-x-2"><button onclick="openUserModal(${u.uid})" class="text-blue-600 bg-blue-50 hover:bg-blue-200 p-2 rounded-full" title="Editar Usuario"><i data-lucide="edit" class="w-4 h-4"></i></button><button onclick="handleDeleteUser(${u.uid})" class="text-red-600 bg-red-50 hover:bg-red-200 p-2 rounded-full" title="Eliminar Usuario"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr>`).join('')}
+                                ${state.users.map(u => `
+                                    <tr class="bg-white border-b hover:bg-gray-50">
+                                        <td class="px-6 py-4 font-medium text-gray-900">${u.email}</td>
+                                        <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${u.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">${u.role}</span></td>
+                                        <td class="px-6 py-4">${u.area || 'N/A'}</td>
+                                        <td class="px-6 py-4 text-center space-x-2">
+                                            <button onclick="openUserModal(${u.uid})" class="text-blue-600 bg-blue-50 hover:bg-blue-200 p-2 rounded-full" title="Editar Usuario"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                            <button onclick="handleDeleteUser(${u.uid})" class="text-red-600 bg-red-50 hover:bg-red-200 p-2 rounded-full" title="Eliminar Usuario"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                        </td>
+                                    </tr>`).join('')}
                             </tbody>
                         </table>
                     </div>
                 </div>
             `;
         };
-
-        // --- FUNCIONES PARA REPORTES ---
+        
         const renderReportsPage = async () => {
             const filterButtonClass = (limit) => 
                 `px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${state.currentLimit === limit ? 'bg-[#0033a0] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`;
             
+            const adminNumberFilter = state.user.role === 'admin' ? `
+                <div class="flex items-center space-x-2">
+                     <label for="report-from-area" class="text-sm font-medium">Reporte de:</label>
+                     <select id="report-from-area" onchange="handleReportAreaChange(this.value)" class="p-1.5 bg-gray-200 border-gray-300 text-sm rounded-md">
+                        ${Object.keys(state.sendingNumbers).map(area => `<option value="${area}" ${state.reportFromArea === area ? 'selected' : ''}>${area.toUpperCase()}</option>`).join('')}
+                     </select>
+                </div>
+            ` : '';
+
             return `
                 <div class="animate-fade-in">
                     <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
@@ -238,16 +288,17 @@
                             <h1 class="text-3xl font-bold">Reporte de Mensajes</h1>
                             <p class="text-gray-500 mt-1">Estado de los mensajes enviados desde tu número de Twilio.</p>
                         </div>
-                        <div id="report-filters" class="flex flex-wrap gap-2">
-                            <button onclick="handleLimitChange('1000')" class="${filterButtonClass('1000')}">Últimos 1000</button>
-                            <button onclick="handleLimitChange('2000')" class="${filterButtonClass('2000')}">Últimos 2000</button>
-                            <button onclick="handleLimitChange('5000')" class="${filterButtonClass('5000')}">Últimos 5000</button>
-                            <button onclick="handleLimitChange('10000')" class="${filterButtonClass('10000')}">Últimos 10000</button>
+                        <div class="flex flex-wrap items-center gap-4">
+                            ${adminNumberFilter}
+                            <div id="report-filters" class="flex flex-wrap gap-2">
+                                <button onclick="handleLimitChange('1000')" class="${filterButtonClass('1000')}">Últimos 1000</button>
+                                <button onclick="handleLimitChange('2000')" class="${filterButtonClass('2000')}">Últimos 2000</button>
+                                <button onclick="handleLimitChange('5000')" class="${filterButtonClass('5000')}">Últimos 5000</button>
+                                <button onclick="handleLimitChange('10000')" class="${filterButtonClass('10000')}">Últimos 10000</button>
+                            </div>
                         </div>
                     </div>
-                    <div id="report-dashboard" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <!-- Las tarjetas de estadísticas se renderizarán aquí -->
-                    </div>
+                    <div id="report-dashboard" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
                     <div class="mt-8">
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="text-xl font-bold">Detalle de Envíos</h2>
@@ -255,9 +306,7 @@
                                 <i data-lucide="download"></i><span>Descargar CSV</span>
                             </button>
                         </div>
-                        <div id="report-table-container" class="bg-white rounded-2xl shadow-lg overflow-hidden">
-                             <!-- La tabla de detalles se renderizará aquí -->
-                        </div>
+                        <div id="report-table-container" class="bg-white rounded-2xl shadow-lg overflow-hidden"></div>
                     </div>
                 </div>
             `;
@@ -317,13 +366,24 @@
                 tableContainer.innerHTML = '<p class="text-center p-8 text-gray-500">No se encontraron mensajes para el período seleccionado.</p>';
                 return;
             }
+            
+            const getStatusChipClass = (status) => {
+                const classes = {
+                    read: 'bg-sky-100 text-sky-800',
+                    delivered: 'bg-green-100 text-green-800',
+                    sent: 'bg-teal-100 text-teal-800',
+                    failed: 'bg-red-100 text-red-800',
+                    undelivered: 'bg-yellow-100 text-yellow-800',
+                };
+                return classes[status] || 'bg-gray-100 text-gray-800';
+            };
 
             const tableRows = messages.map(msg => `
                 <tr class="bg-white border-b hover:bg-gray-50">
                     <td class="px-6 py-4">${msg.to}</td>
                     <td class="px-6 py-4">${msg.date_sent}</td>
                     <td class="px-6 py-4 text-xs max-w-sm whitespace-pre-wrap">${msg.body}</td>
-                    <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">${msg.status}</span></td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusChipClass(msg.status)}">${msg.status}</span></td>
                 </tr>
             `).join('');
 
@@ -348,11 +408,15 @@
         
         const handleLimitChange = (limit) => {
             state.currentLimit = limit;
-            navigateTo('reports');
+            fetchReportData();
         };
 
         const handleDownloadCsv = () => {
-            window.location.href = `/api/reports/download?limit=${state.currentLimit}`;
+            let apiUrl = `/api/reports/download?limit=${state.currentLimit}`;
+            if (state.user.role === 'admin') {
+                apiUrl += `&from_area=${state.reportFromArea}`;
+            }
+            window.location.href = apiUrl;
         };
 
         const fetchReportData = async () => {
@@ -360,11 +424,7 @@
             const tableContainer = document.getElementById('report-table-container');
             
             const showLoading = () => {
-                const loadingHTML = `
-                    <div class="text-center p-8 bg-white rounded-2xl shadow-lg col-span-full flex flex-col items-center justify-center">
-                        <i data-lucide="loader-2" class="w-10 h-10 text-gray-400 animate-spin"></i>
-                        <p class="text-gray-500 mt-4">Cargando datos del reporte...</p>
-                    </div>`;
+                const loadingHTML = `<div class="text-center p-8 bg-white rounded-2xl shadow-lg col-span-full flex flex-col items-center justify-center"><i data-lucide="loader-2" class="w-10 h-10 text-gray-400 animate-spin"></i><p class="text-gray-500 mt-4">Cargando datos del reporte...</p></div>`;
                 if(dashboard) dashboard.innerHTML = loadingHTML;
                 if(tableContainer) tableContainer.innerHTML = '<div class="text-center p-8"><i data-lucide="loader-2" class="w-6 h-6 text-gray-400 animate-spin mx-auto"></i></div>';
                 lucide.createIcons();
@@ -372,8 +432,12 @@
 
             showLoading();
 
+            let apiUrl = `/api/reports?limit=${state.currentLimit}`;
+            if (state.user.role === 'admin') {
+                apiUrl += `&from_area=${state.reportFromArea}`;
+            }
             try {
-                const res = await fetch(`/api/reports?limit=${state.currentLimit}`);
+                const res = await fetch(apiUrl);
                 if (!res.ok) throw new Error('La respuesta del servidor no fue OK');
                 state.reportsData = await res.json();
                 renderReportCards(state.reportsData.stats);
@@ -386,13 +450,33 @@
             }
         };
 
-        // --- NAVEGACIÓN Y MANEJADORES DE EVENTOS ---
+        const handleReportAreaChange = (area) => {
+            state.reportFromArea = area;
+            fetchReportData();
+        };
         
+        const handleTemplateFilter = async (area) => {
+            state.templateFilter = area;
+            if (area === 'all') {
+                state.filteredTemplates = state.templates;
+            } else {
+                state.filteredTemplates = state.templates.filter(t => t.area === area);
+            }
+            await render();
+        };
+
         const navigateTo = async (page) => {
             state.currentPage = page;
             await render();
             if (page === 'reports') {
                 await fetchReportData();
+            }
+            if (page === 'templates') {
+                const response = await fetch('/api/templates');
+                if(response.ok) {
+                    state.templates = await response.json();
+                    handleTemplateFilter(state.templateFilter);
+                }
             }
         };
 
@@ -402,14 +486,22 @@
             const password = document.getElementById('login-password').value;
             const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
             const data = await res.json();
-            if (data.success) { state.user = data.user; navigateTo('dashboard'); } 
-            else { alert(data.message); }
+            if (data.success) { 
+                state.user = data.user;
+                if (state.user.role === 'admin') {
+                    const numbersRes = await fetch('/api/sending_numbers');
+                    if (numbersRes.ok) state.sendingNumbers = await numbersRes.json();
+                }
+                navigateTo('dashboard');
+            } else { 
+                alert(data.message); 
+            }
         };
 
         const handleLogout = async () => {
             await fetch('/api/logout', { method: 'POST' });
             state.user = null;
-            navigateTo('login');
+            window.location.reload();
         };
 
         const handleSaveUser = async (e) => {
@@ -418,9 +510,10 @@
             const email = document.getElementById('user-email').value;
             const password = document.getElementById('user-password').value;
             const role = document.getElementById('user-role').value;
+            const area = document.getElementById('user-area').value;
             const url = userId ? `/api/users/${userId}` : '/api/users';
             const method = userId ? 'PUT' : 'POST';
-            const body = { email, role };
+            const body = { email, role, area: role === 'standard' ? area : null };
             if (password) body.password = password;
             const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             if (res.ok) { closeModal('user-modal'); navigateTo('users'); } 
@@ -438,45 +531,18 @@
         const openUserModal = (userId = null) => {
             const form = document.getElementById('user-form');
             form.reset();
-            const modalTitle = document.getElementById('user-modal-title');
-            const userIdField = document.getElementById('user-id');
-            const userEmailField = document.getElementById('user-email');
-            if (userId) {
-                const user = state.users.find(u => u.uid === userId);
-                modalTitle.textContent = 'Editar Usuario';
-                userIdField.value = user.uid;
-                userEmailField.value = user.email;
-                document.getElementById('user-role').value = user.role;
-            } else {
-                modalTitle.textContent = 'Crear Usuario';
-                userIdField.value = '';
-            }
+            
+            const user = userId ? state.users.find(u => u.uid === userId) : null;
+            document.getElementById('user-modal-title').textContent = user ? 'Editar Usuario' : 'Crear Usuario';
+            document.getElementById('user-id').value = user ? user.uid : '';
+            document.getElementById('user-email').value = user ? user.email : '';
+            document.getElementById('user-role').value = user ? user.role : 'standard';
+            document.getElementById('user-area').value = user && user.area ? user.area : 'dti';
+            
+            toggleAreaSelector();
             openModal('user-modal');
         };
         
-        const handleCreateTemplate = async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('template-name').value;
-            const type = document.getElementById('template-type').value;
-            const body = document.getElementById('template-body').value;
-            const mediaUrl = document.getElementById('media-url').value;
-            
-            const payload = { name, type, body };
-            if (type === 'twilio/media') {
-                payload.mediaUrl = mediaUrl;
-            }
-            
-            const res = await fetch('/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            const data = await res.json();
-            if (res.ok) {
-                alert('Plantilla enviada a aprobación con SID: ' + data.sid);
-                closeModal('template-modal');
-                navigateTo('templates');
-            } else {
-                alert(`Error: ${data.message}`);
-            }
-        };
-
         const handleCreateCampaign = async (e) => {
             e.preventDefault();
             const form = document.getElementById('campaign-form');
@@ -498,58 +564,65 @@
             else { const err = await res.json(); alert(`Error: ${err.message}`); }
         };
 
-        const handleDeleteCampaign = async (campaignId) => {
-            if (confirm('¿Estás seguro de que quieres eliminar esta campaña?')) {
-                const res = await fetch(`/api/campaigns/${campaignId}`, { method: 'DELETE' });
-                if (res.ok) { navigateTo('dashboard'); } 
-                else { const err = await res.json(); alert(`Error: ${err.message}`); }
-            }
-        };
-
         const openCampaignModal = async () => {
             const res = await fetch('/api/templates');
             const templates = await res.json();
+            
+            // Ordenar plantillas alfabéticamente
+            templates.sort((a, b) => a.friendly_name.localeCompare(b.friendly_name));
+
             const select = document.getElementById('campaign-template-select');
             select.innerHTML = '<option value="" disabled selected>Elige una plantilla...</option>';
             templates.forEach(t => { select.innerHTML += `<option value="${t.sid}">${t.friendly_name}</option>`; });
+
+            const fromNumberContainer = document.getElementById('from-number-selector-container');
+            if (state.user.role === 'admin') {
+                const fromAreaSelect = document.getElementById('from-area-select');
+                fromAreaSelect.innerHTML = Object.keys(state.sendingNumbers)
+                    .map(area => `<option value="${area}">${area.toUpperCase()} - ${state.sendingNumbers[area]}</option>`)
+                    .join('');
+                fromNumberContainer.hidden = false;
+            } else {
+                fromNumberContainer.hidden = true;
+            }
             openModal('campaign-modal');
         };
-
-        const openErrorModal = async (campaignId) => {
-            const res = await fetch(`/api/campaigns/${campaignId}/errors`);
-            const errors = await res.json();
-            const errorList = document.getElementById('error-list');
-            errorList.innerHTML = '';
-            if (errors.length > 0) {
-                errors.forEach(err => {
-                    errorList.innerHTML += `<tr class="border-b"><td class="px-4 py-2">${err.phone}</td><td class="px-4 py-2 text-xs">${err.error}</td></tr>`;
-                });
-            } else {
-                errorList.innerHTML = '<tr><td colspan="2" class="text-center p-4">No se encontraron errores para esta campaña.</td></tr>';
-            }
-            openModal('error-modal');
-        };
-
+        
         const openModal = (id) => document.getElementById(id).removeAttribute('hidden');
         const closeModal = (id) => document.getElementById(id).setAttribute('hidden', true);
         const toggleScheduleDate = (show) => document.getElementById('schedule-date-container').hidden = !show;
+        const toggleAreaSelector = () => {
+            const role = document.getElementById('user-role').value;
+            document.getElementById('area-selector-container').hidden = role !== 'standard';
+        };
         
         document.addEventListener('DOMContentLoaded', async () => {
             document.title = `${APP_TITLE} - Anáhuac Mayab`;
-            const res = await fetch('/api/session');
-            const data = await res.json();
-            if (data.user) { state.user = data.user; navigateTo('dashboard'); } 
-            else { navigateTo('login'); }
+            const sessionRes = await fetch('/api/session');
+            const data = await sessionRes.json();
+            if (data.user) { 
+                state.user = data.user; 
+                if(state.user.role === 'admin') {
+                    const numbersRes = await fetch('/api/sending_numbers');
+                    if (numbersRes.ok) {
+                        state.sendingNumbers = await numbersRes.json();
+                        const firstArea = Object.keys(state.sendingNumbers)[0];
+                        if (firstArea) state.reportFromArea = firstArea;
+                    }
+                }
+                navigateTo('dashboard');
+            } else { 
+                navigateTo('login'); 
+            }
             document.body.addEventListener('submit', (e) => {
                 if (e.target.id === 'login-form') handleLogin(e);
                 if (e.target.id === 'campaign-form') handleCreateCampaign(e);
                 if (e.target.id === 'user-form') handleSaveUser(e);
                 if (e.target.id === 'template-form') handleCreateTemplate(e);
             });
-            document.getElementById('template-type').addEventListener('change', (e) => {
-                document.getElementById('media-url-container').hidden = e.target.value !== 'twilio/media';
-            });
+            document.getElementById('user-role').addEventListener('change', toggleAreaSelector);
         });
     </script>
 </body>
 </html>
+
