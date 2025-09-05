@@ -314,16 +314,37 @@
             if (!tableContainer) return;
 
             if (messages.length === 0) {
-                tableContainer.innerHTML = '<p class="text-center p-8 text-gray-500">No se encontraron mensajes para el período seleccionado.</p>';
+                tableContainer.innerHTML = '<p class="text-center p-8 text-gray-500">No se encontraron mensajes.</p>';
                 return;
             }
+
+            const getStatusChipClass = (status) => {
+                switch (status) {
+                    case 'read':
+                        return 'bg-sky-100 text-sky-800';
+                    case 'delivered':
+                        return 'bg-green-100 text-green-800';
+                    case 'failed':
+                        return 'bg-red-100 text-red-800';
+                    case 'undelivered':
+                        return 'bg-yellow-100 text-yellow-800';
+                    case 'sent':
+                        return 'bg-teal-100 text-teal-800';
+                    default:
+                        return 'bg-gray-100 text-gray-800';
+                }
+            };
 
             const tableRows = messages.map(msg => `
                 <tr class="bg-white border-b hover:bg-gray-50">
                     <td class="px-6 py-4">${msg.to}</td>
                     <td class="px-6 py-4">${msg.date_sent}</td>
                     <td class="px-6 py-4 text-xs max-w-sm whitespace-pre-wrap">${msg.body}</td>
-                    <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">${msg.status}</span></td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusChipClass(msg.status)}">
+                            ${msg.status}
+                        </span>
+                    </td>
                 </tr>
             `).join('');
 
